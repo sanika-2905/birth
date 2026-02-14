@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A Special Surprise</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;600&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            overflow: hidden;
+            background-color: #fdf6f6;
+        }
+        .font-fancy { font-family: 'Dancing Script', cursive; }
+        .font-serif-display { font-family: 'Playfair Display', serif; }
+
+        /* Preloader */
+        #preloader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #fff; z-index: 9999; display: flex;
+            justify-content: center; align-items: center;
+            transition: opacity 0.75s ease, visibility 0.75s ease;
+        }
+        #preloader.loaded { opacity: 0; visibility: hidden; pointer-events: none; }
+        .loader {
+            width: 50px; height: 50px; border: 5px solid #fde2e2;
+            border-top: 5px solid #f38181; border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Page container styles */
+        .page {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            transition: opacity 0.8s ease-in-out, transform 0.8s cubic-bezier(0.77, 0, 0.175, 1);
+            opacity: 0; transform: scale(1.1); pointer-events: none;
+        }
+        .page.active { opacity: 1; transform: scale(1); pointer-events: auto; }
+        .page.hidden-left { transform: translateX(-100%) scale(0.9); opacity: 0; }
+        .page.hidden-right { transform: translateX(100%) scale(0.9); opacity: 0; }
+
+        /* Page 1: NEW Letter and Particle Animation */
+        #page1 { background: linear-gradient(135deg, #fce38a 0%, #f38181 100%); }
+        #page1 h1 { animation: fadeInDown 1.5s ease-out 0.5s forwards; opacity: 0; }
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .envelope {
+            position: relative; width: 300px; height: 200px; background-color: #f9d1d1;
+            border-radius: 10px; cursor: pointer; transition: transform 0.5s, box-shadow 0.5s;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index: 10;
+        }
+        .envelope.open { transform: translateY(200px) scale(0.8); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .envelope:hover { transform: translateY(-10px) scale(1.05); }
+        .envelope-flap {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100px;
+            background-color: #f5a6a6; border-top-left-radius: 10px; border-top-right-radius: 10px;
+            transform-origin: top; transition: transform 0.5s 0.2s; clip-path: polygon(0 0, 100% 0, 50% 100%);
+        }
+        .envelope-body {
+            position: absolute; top: 100px; left: 0; width: 100%; height: 100px; background-color: #f9d1d1;
+            border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;
+        }
+        .envelope.open .envelope-flap { transform: rotateX(180deg); }
+        
+        .heart-particle {
+            position: absolute;
+            opacity: 0;
+            z-index: 15;
+            width: 40px;
+            height: 40px;
+            pointer-events: none;
+        }
+        .heart-particle svg {
+            width: 100%;
+            height: 100%;
+            fill: #ff69b4;
+            filter: drop-shadow(0 0 5px #ff69b4);
+        }
+
+        @keyframes bloom {
+            0% { transform: scale(0.1) rotate(0deg); opacity: 0.8; }
+            50% { transform: scale(1.2) rotate(15deg); opacity: 1; }
+            100% { transform: scale(0) rotate(-15deg); opacity: 0; }
+        }
+
+        #final-cta {
+            position: absolute; z-index: 20; opacity: 0; transform: scale(0.5);
+            transition: opacity 0.5s ease-in-out, transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+        }
+        #final-cta.visible { opacity: 1; transform: scale(1); }
+        #final-cta:hover { transform: scale(1.1) !important; }
+        
+        @keyframes final-cta-pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        /* Page 3: Image gallery animation */
+        #page3 .gallery-img {
+            opacity: 0; transform: translateY(30px);
+            transition: transform 0.6s ease, box-shadow 0.3s ease, filter 0.3s ease, opacity 0.6s ease;
+            filter: grayscale(50%);
+        }
+        #page3 .gallery-img.visible { opacity: 1; transform: translateY(0); }
+        #page3 .gallery-img:hover { transform: scale(1.08) rotate(2deg) !important; box-shadow: 0 15px 30px rgba(0,0,0,0.2); filter: grayscale(0%); }
+        #surprise-button { animation: pulse 2s infinite ease-in-out; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        
+        /* Page 4: Video animation */
+        #page4 {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+        }
+
+        .heart-bg-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            overflow: hidden; z-index: 1;
+        }
+
+        .floating-heart {
+            position: absolute;
+            bottom: -60px;
+            opacity: 0;
+            pointer-events: none;
+            animation: floatUp 15s infinite linear;
+        }
+
+        .floating-heart svg {
+            width: 100%; height: 100%;
+            fill: rgba(255, 255, 255, 0.6);
+            filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.7));
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+            10%, 90% { opacity: 1; }
+            100% { transform: translateY(-120vh) rotate(60deg); opacity: 0; }
+        }
+
+        .video-slide-single {
+            position: relative; width: 80%; max-width: 800px; height: auto; aspect-ratio: 16 / 9;
+            background-color: #333; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            overflow: hidden;
+            z-index: 5;
+            opacity: 0;
+            transform: translateY(50px) scale(0.9);
+            transition: transform 1.2s cubic-bezier(0.165, 0.84, 0.44, 1) 0.5s, opacity 1.2s ease 0.5s;
+        }
+
+        #page4.active .video-slide-single {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        .video-slide-single img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* Audio Control */
+        #audio-control {
+            position: fixed; bottom: 20px; right: 20px; width: 50px; height: 50px;
+            background: white; border-radius: 50%; display: flex; justify-content: center;
+            align-items: center; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 1000;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div id="preloader"><div class="loader"></div></div>
+
+    <!-- Page 1: The Letter -->
+    <div id="page1" class="page active flex flex-col justify-center items-center p-4">
+        <div class="text-center mb-8 text-white">
+            <h1 class="text-4xl md:text-6xl font-serif-display drop-shadow-lg">Happiest Birthday Balaaa ❤️🥹</h1>
+            <p id="instruction-text" class="mt-2 text-lg drop-shadow-md transition-opacity duration-500">Click the envelope to open it</p>
+        </div>
+        <div id="envelope" class="envelope">
+            <div class="envelope-flap"></div>
+            <div class="envelope-body"></div>
+        </div>
+        <div id="animation-container" class="absolute inset-0 flex justify-center items-center"></div>
+        <div id="final-cta">
+             <div class="relative group">
+                <div class="absolute -inset-1 bg-gradient-to-r from-pink-600 to-purple-600 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
+                <button class="relative px-7 py-4 bg-black rounded-lg leading-none flex items-center">
+                    <span class="text-pink-400">Love you soo much Bacchaa 😚</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page 2: Magazine Layout -->
+    <div id="page2" class="page bg-white overflow-y-auto">
+        <div class="container mx-auto p-4 md:p-8 lg:p-12 h-full">
+            <div class="grid md:grid-cols-5 gap-8 lg:gap-12 h-full">
+                <div class="md:col-span-3 text-gray-700">
+                    <h2 class="text-3xl md:text-5xl font-serif-display text-gray-800 border-b-2 border-pink-300 pb-4 mb-6">Our Unforgettable Journey</h2>
+                    <p class="mb-4 text-justify leading-relaxed">Happiest Birthday to the king of my heart, the love of my life, my everything ❤️🤍
+I can never fully put into words how grateful I am that you walked into my life and filled it with so much light. You are my blessing from the universe, my proof that miracles really do happen 🧿✨
+Thank you for being the reason behind my smiles, for understanding me like no one else ever could, and for standing by my side through every good and bad moment 🤍
+With you, I learned how to love deeper, care more, and believe in forever. Five beautiful years together — fighting, laughing, teasing, loving — and I still want to spend my entire life doing all of it only with you ♾️😘 I’m sorry for every time I hurt you, but know this: my heart has always chosen you and always will ❤️</p>
+                    <p class="mb-4 text-justify leading-relaxed">You are my world, my happiness, my heartbeat, my safe place. I feel like the luckiest person alive to call you mine, my life partner, my forever 🥹💌 I can’t imagine my life without you, and I never want to. Please stay with me always — I promise to love you, support you, and care for you no matter what 🤞❤️
+On your special day, I pray you get all the happiness, love, and success you deserve. Stay healthy, stay smiling, and stay mine 😘🎂</p>
+                    <p class="font-semibold my-6 p-4 bg-pink-50 border border-pink-200 rounded-lg italic">"Together is a beautiful place to be."</p>
+                    <p class="mb-4 text-justify leading-relaxed">Today we also completed ours happily Six years of togethernesss. Happiest Love Anniversaryyy too myyy dear Life Partner ❤️🥹🧿</p>
+                </div>
+                <div class="md:col-span-2 flex justify-center items-center">
+                    <img id="magazine-image" src="https://i.postimg.cc/SRJ6y16f/IMG-20260214-163548.jpg" onerror="this.onerror=null;this.src='https://i.postimg.cc/SRJ6y16f/IMG-20260214-163548.jpg';" alt="A special memory" class="rounded-lg shadow-2xl w-full h-auto max-h-[80vh] object-cover cursor-pointer transition-transform duration-300 hover:scale-105">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="page3" class="page bg-gray-50 overflow-y-auto">
+    <div class="container mx-auto p-4 md:p-8 text-center">
+        <h2 class="text-4xl md:text-6xl font-serif-display text-gray-800 mb-2">A Gallery of Us</h2>
+        <p class="text-gray-600 mb-8 md:mb-12">Every picture tells a part of our story.</p>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6"></div>
+        
+        <button id="surprise-button" class="relative z-50 mt-12 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-4 px-8 rounded-full shadow-lg transform transition-transform hover:scale-110 duration-300">
+            Click heree ❤️
+        </button>
+    </div>
+</div>
+
+<div id="page4" class="page bg-pink-100 flex flex-col justify-center items-center p-4">
+    <div class="text-center mb-12">
+        <h2 class="text-4xl md:text-6xl font-fancy text-pink-600 drop-shadow-md">One Last Thing...</h2>
+    </div>
+
+    <div id="heart-letter" class="cursor-pointer transition-transform hover:scale-110 active:scale-95 relative z-50">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-32 h-32 text-red-500 drop-shadow-2xl" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+        </svg>
+        <span class="absolute inset-0 flex items-center justify-center text-white font-bold text-sm pointer-events-none"></span>
+    </div>
+
+    <div id="love-msg-overlay" class="fixed inset-0 flex items-center justify-center z-[2000] pointer-events-none opacity-0 transition-all duration-700 bg-white/40 backdrop-blur-md">
+        <h2 id="love-text" class="text-6xl md:text-8xl font-fancy text-pink-600 drop-shadow-[0_10px_20px_rgba(0,0,0,0.3)] text-center scale-50 transition-transform duration-700">
+            I Love You always-forever ! ❤️🥹🧿
+        </h2>
+    </div>
+</div>
+
+    <div id="audio-control" title="Toggle Music">
+        <svg id="music-on" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        <svg id="music-off" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"><path d="M9 18V5l12-2v13M18 16c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zM6 18c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+    </div>
+    <audio id="my-love-song" src="https://files.catbox.moe/qi1rux.mp4" loop></audio>
+
+    <script>
+        window.addEventListener('load', () => {
+            document.getElementById('preloader').classList.add('loaded');
+        });
+
+        const synth = new Tone.Synth({ oscillator: { type: 'fatsine' }, envelope: { attack: 0.1, decay: 0.2, sustain: 0.5, release: 0.8 } }).toDestination();
+        const pages = document.querySelectorAll('.page');
+        let currentPage = 0;
+
+        function showPage(pageIndex) {
+            pages.forEach((page, index) => {
+                page.classList.remove('active');
+                if (index !== pageIndex) { page.classList.add(index < pageIndex ? 'hidden-left' : 'hidden-right'); }
+            });
+            pages[pageIndex].classList.add('active');
+            pages[pageIndex].classList.remove('hidden-left', 'hidden-right');
+            currentPage = pageIndex;
+            if (pageIndex === 2) { animateGallery(); }
+            if (pageIndex === 3) { setupHeartBackground(); }
+        }
+
+        // --- Page 1 Logic ---
+        const envelope = document.getElementById('envelope');
+        const instructionText = document.getElementById('instruction-text');
+        const animationContainer = document.getElementById('animation-container');
+        const finalCta = document.getElementById('final-cta');
+
+        envelope.addEventListener('click', () => {
+            if (envelope.classList.contains('open')) return;
+            envelope.classList.add('open');
+            instructionText.style.opacity = '0';
+            
+            if (Tone.context.state === 'running') {
+                synth.triggerAttackRelease('C5', '8n');
+            }
+
+            setTimeout(() => createAndAnimateHearts(), 500);
+        });
+
+        function createAndAnimateHearts() {
+            const numHearts = 30;
+            const containerRect = animationContainer.getBoundingClientRect();
+
+            for (let i = 0; i < numHearts; i++) {
+                const heart = document.createElement('div');
+                heart.classList.add('heart-particle');
+                heart.innerHTML = `<svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path></svg>`;
+                animationContainer.appendChild(heart);
+                
+                const angle = Math.random() * Math.PI * 2;
+                const radius = Math.random() * (containerRect.width * 0.4);
+                const x = Math.cos(angle) * radius;
+                const y = Math.sin(angle) * radius;
+                
+                heart.style.transform = `translate(${x}px, ${y}px)`;
+                
+                const duration = Math.random() * 1.5 + 1;
+                const delay = Math.random() * 0.5;
+                heart.style.animation = `bloom ${duration}s ease-out ${delay}s forwards`;
+            }
+
+            // Show the final button
+            setTimeout(() => {
+                finalCta.classList.add('visible');
+                finalCta.style.animation = 'final-cta-pulse 2s infinite ease-in-out';
+                instructionText.textContent = "Let's begin our journey...";
+                instructionText.style.opacity = '1';
+            }, 2500);
+        }
+        
+        finalCta.addEventListener('click', () => showPage(1));
+
+        // --- Page 2 Logic ---
+        document.getElementById('magazine-image').addEventListener('click', () => showPage(2));
+
+        // --- Page 3 Logic ---
+        const gallery = document.querySelector('#page3 .grid');
+        const surpriseButton = document.getElementById('surprise-button');
+
+        function animateGallery() {
+            const galleryImages = document.querySelectorAll('#page3 .gallery-img');
+            galleryImages.forEach((img, index) => {
+                setTimeout(() => img.classList.add('visible'), index * 100);
+            });
+        }
+        (function setupGallery() {
+    // 1. Put your image links in this list
+    const myImages = [
+        "https://i.postimg.cc/wvKdzMS3/Snapchat-972812656.jpg",
+        "https://i.postimg.cc/m2pJRh9M/IMG-20250606-WA0082.jpg",
+        "https://i.postimg.cc/50pp3kqt/IMG-20260214-141342-275.jpg",
+        "https://i.postimg.cc/V644RHBk/IMG-20260214-141525-136.jpg",
+        "https://i.postimg.cc/3R99BbCr/IMG-20260214-141512-410.jpg",
+        "https://i.postimg.cc/hjbtvNRg/IMG-0634.jpg",
+        " https://i.postimg.cc/bwQM7PQ3/Screenshot-2026-0214-184119.png",
+        "https://i.postimg.cc/FKPQ6m46/Screenshot-2026-0214-184158.png",
+        "https://i.postimg.cc/Hs0RKH4G/Screenshot-2026-0214-184218.png",
+        "https://i.postimg.cc/MK4MC2Wy/Screenshot-2026-0214-184920.png",
+        "https://i.postimg.cc/zvKSyzDP/IMG-20260214-183438.jpg",
+        "https://i.postimg.cc/y8vhgrBH/IMG-20260214-183457.jpg"
+    ];
+
+    // 2. This part puts them on the page
+    myImages.forEach((src, index) => {
+        const imgContainer = document.createElement('div');
+        imgContainer.className = 'gallery-img aspect-square bg-gray-200 rounded-lg shadow-lg overflow-hidden';
+        
+        const img = document.createElement('img');
+        img.src = src; 
+        img.alt = `Gallery image ${index + 1}`;
+        img.className = 'w-full h-full object-cover';
+        
+        // Fallback image if yours fails to load
+        img.onerror = function() { 
+            this.onerror=null; 
+            this.src='https://i.postimg.cc/J4z0vB1c/Screenshot-20260212-163103.jpg'; 
+        };
+        
+        imgContainer.appendChild(img);
+        gallery.appendChild(imgContainer);
+    });
+})();
+
+const heartBtn = document.getElementById('heart-letter');
+const overlayLove = document.getElementById('love-msg-overlay');
+const textLove = document.getElementById('love-text');
+
+if(heartBtn) {
+    heartBtn.addEventListener('click', () => {
+        // 1. Play Sound
+        if (Tone.context.state === 'running') {
+            synth.triggerAttackRelease('G5', '4n');
+        }
+
+        // 2. TRIGGER THE BLOOM (Directly on Page 4)
+        // We will create 40 hearts for a "big" explosion effect
+        for (let i = 0; i < 40; i++) {
+            const heart = document.createElement('div');
+            heart.classList.add('heart-particle');
+            // We give it a high z-index to make sure it's above the page
+            heart.style.zIndex = "100"; 
+            heart.innerHTML = `<svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path></svg>`;
+            
+            // Add it to Page 4 specifically
+            document.getElementById('page4').appendChild(heart);
+            
+            // Randomize direction and distance
+            const angle = Math.random() * Math.PI * 2;
+            const radius = Math.random() * 300; // Distance they fly out
+            const x = Math.cos(angle) * radius;
+            const y = Math.sin(angle) * radius;
+            
+            // Start the animation from the center
+            heart.style.position = 'absolute';
+            heart.style.left = '50%';
+            heart.style.top = '50%';
+            heart.style.transform = `translate(-50%, -50%)`;
+            
+            // Apply the "bloom" animation you already have in your CSS
+            const duration = Math.random() * 1.5 + 1;
+            const delay = Math.random() * 0.2;
+            heart.style.animation = `bloom ${duration}s ease-out ${delay}s forwards`;
+
+            // Clean up the heart after animation finishes
+            setTimeout(() => heart.remove(), (duration + delay) * 1000);
+        }
+
+        // 3. Reveal the "I Love You" message
+        overlayLove.classList.remove('opacity-0');
+        overlayLove.classList.add('opacity-100');
+        textLove.style.transform = 'scale(1)';
+    });
+}
+
+        surpriseButton.addEventListener('click', () => {
+            showPage(3);
+        });
+        
+        // --- Updated Audio Logic ---
+        const audioControl = document.getElementById('audio-control');
+        const musicOnIcon = document.getElementById('music-on');
+        const musicOffIcon = document.getElementById('music-off');
+        const myAudio = document.getElementById('my-love-song'); // Your catbox link
+        
+        let musicPlaying = false;
+
+        audioControl.addEventListener('click', () => {
+            if (!musicPlaying) {
+                // OLD: Tone.Transport.start();
+                // NEW: This plays your song link
+                myAudio.play(); 
+                
+                musicOnIcon.classList.add('hidden'); 
+                musicOffIcon.classList.remove('hidden');
+            } else {
+                // OLD: Tone.Transport.stop();
+                // NEW: This pauses your song link
+                myAudio.pause(); 
+                
+                musicOnIcon.classList.remove('hidden'); 
+                musicOffIcon.classList.add('hidden');
+            }
+            musicPlaying = !musicPlaying;
+        });
+        // Initialize first page
+        showPage(0);
+    </script>
+</body>
+</html>
